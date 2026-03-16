@@ -136,6 +136,7 @@
             <h1>PURA — Appraisal (Standalone)</h1>
             <p class="lead">Interactive form: employees &amp;supervisors. Supervisors fill ratings &amp;weights; employees fill self-eval text. Scores calculate automatically. Use the Download button to export CSV.</p>
             <hr/>
+            <form action="" name="submit-to-google-sheet">
             <label>Who is completing this form?</label>
             <select id="role">
                 <option value="employee">Employee (Self-Evaluation)</option>
@@ -328,6 +329,8 @@
                 <button class="btn secondary" id="copyJson">Copy JSON to clipboard</button>
                 <button class="btn secondary" id="resetBtn">Reset</button>
             </div>
+            <button type="submit" style="color: #b91c1c; width: 50px; height: 50px; justify-content: center;">Submit</button>
+        </form>
             <footer>Host: You can upload this single HTML file to GitHub Pages or any static web host (Netlify, Vercel). The form is client-side only; data downloads to the user's device. For server storage or dashboards, connect to a backend (I can help).</footer>
         </div>
         <script>
@@ -643,7 +646,7 @@
             ;
         </script>
         <script>
-              const scriptURL = 'https://script.google.com/macros/s/AKfycbz9MpE6ZVTaubV2MNv1BFZIDVZUhqu677Mmwwj2Qme_-_u30_XYz4v5LyssurWo3ziK/exec'
+              const scriptURL = 'https://script.google.com/macros/s/AKfycbzEvVwDhqg4Sbq9uRyp69C8g0XItq4voe4pgAKlYkT_COyztOE4rPBEwtV0-mhBLnZ2/exec'
               const form = document.forms['submit-to-google-sheet']
               const msg = document.getElementById("msg")
 
