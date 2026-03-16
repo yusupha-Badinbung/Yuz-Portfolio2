@@ -54,6 +54,19 @@
                 font-size: 14px
             }
 
+            .submissionContainer {
+                display: none;
+                text-align: center;
+                color: #0b6efd;
+                font-size: 14px;
+                font-weight: 600;
+                background: #e0f2fe;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 12px;
+                border: 1px solid #bae6fd;
+            }
+
             textarea {
                 min-height: 70px;
                 resize: vertical
@@ -93,6 +106,10 @@
 
             .btn.secondary {
                 background: #6b7280
+            }
+
+            .btn.danger {
+                background: #b91c1c
             }
 
             .result {
@@ -136,6 +153,7 @@
             <i>Equity in Development</i>
         </div>
         <div class="container">
+           <form id="appraisalForm">
             <h1>PURA — Appraisal (Standalone)</h1>
             <p class="lead">Interactive form: employees &amp;supervisors. Supervisors fill ratings &amp;weights; employees fill self-eval text. Scores calculate automatically. Use the Download button to export CSV.</p>
             <hr/>
@@ -327,11 +345,24 @@
                     <div class="error" id="validationMsg"></div>
                 </div>
             </div>
+            
             <div class="flex" style="margin-top:12px">
-                <button class="btn secondary" id="copyJson">Copy JSON to clipboard</button>
-                <button class="btn secondary" id="resetBtn">Reset</button>
+                <div style="flex:1">
+                    <button type="button" class="btn secondary" id="copyJson">Copy JSON to clipboard</button>
+                    <button type="button" class="btn danger" id="resetBtn">Reset</button>
+                </div>
+
+                <div class="flex" style="gap:6px">
+                    <button type="button" class="btn secondary" id="downloadCsv">Download CSV</button>
+                    <button type="submit" class="btn primary" id="submitBtn">Submit to Google Sheets</button>
+                </div>
+
+            </div>
+            <div style="margin-top:10px" class="submissionContainer">
+                <span id="submitStatus" style="margin-left:10px; font-weight:600;"></span>
             </div>
             <footer>Host: You can upload this single HTML file to GitHub Pages or any static web host (Netlify, Vercel). The form is client-side only; data downloads to the user's device. For server storage or dashboards, connect to a backend (I can help).</footer>
+            </form>
         </div>
         <script>
             // create 4 task blocks dynamically
@@ -354,8 +385,13 @@
             }
 
             // helpers
+            // function val(id) {
+            //     return document.getElementById(id).value;
+            // }
+
             function val(id) {
-                return document.getElementById(id).value;
+                const el = document.getElementById(id);
+                return el ? el.value : '';
             }
             function set(id, v) {
                 document.getElementById(id).value = v;
@@ -603,192 +639,107 @@
             computeScores();
         </script>
         <script>
-            const FLOW_URL = "FLOW_URL_HERE";
+            // const FLOW_URL = "FLOW_URL_HERE";
+            const FLOW_URL = "https://script.google.com/macros/s/AKfycbz9MpE6ZVTaubV2MNv1BFZIDVZUhqu677Mmwwj2Qme_-_u30_XYz4v5LyssurWo3ziK/exec";
+
 
             function collectFormData() {
                 const all = {};
-                document.querySelectorAll('input,select,textarea').forEach(el => {
-                    if (el.id)
+
+                document.querySelectorAll('#appraisalForm input, #appraisalForm select, #appraisalForm textarea').forEach(el => {
+                    if (el.id) {
                         all[el.id] = el.value;
-                }
-                );
-                // dynamic tasks
+                    }
+                });
+
                 const tasks = [];
-                let i = 1;
-                while (document.getElementById(`task${i}_desc`)) {
+                for (let i = 1; i <= 4; i++) {
                     tasks.push({
-                        desc: document.getElementById(`task${i}_desc`).value,
+                        desc: document.getElementById(`task${i}_desc`)?.value || "",
                         weight: document.getElementById(`task${i}_weight`)?.value || "",
                         rating: document.getElementById(`task${i}_rating`)?.value || "",
                         score: document.getElementById(`task${i}_score`)?.value || ""
                     });
-                    i++;
                 }
-                all['tasks'] = tasks;
+
+                all.tasks = tasks;
+                all.jobTasksTotal = document.getElementById('jobTasksTotal')?.textContent || "";
+                all.adaptScore = document.getElementById('adaptScore')?.textContent || "";
+                all.commScore = document.getElementById('commScore')?.textContent || "";
+                all.selfScore = document.getElementById('selfScore')?.textContent || "";
+                all.totalScore = document.getElementById('totalScore')?.textContent || "";
+
                 return all;
             }
 
-            document.getElementById('submitToHR').onclick = async () => {
-                const data = collectFormData();
-                try {
-                    const resp = await fetch(FLOW_URL, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(data)
-                    });
-                    alert("Submitted to HR.");
-                } catch (e) {
-                    alert("Error submitting.");
-                }
-            }
-            ;
-        </script>
-        <script>
-              const scriptURL = 'https://script.google.com/macros/s/AKfycbz9MpE6ZVTaubV2MNv1BFZIDVZUhqu677Mmwwj2Qme_-_u30_XYz4v5LyssurWo3ziK/exec'
-              const form = document.forms['submit-to-google-sheet']
-              const msg = document.getElementById("msg")
+            document.getElementById('appraisalForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-              form.addEventListener('submit', e => {
-                e.preventDefault()
-                fetch(scriptURL, { method: 'POST', body: new FormData(form)})
-                  .then(response =>{
-                    msg.innerHTML = "Message sent Succesfully"
-                    setTimeout(function(){
-                        msg.innerHTML =""
-                    },1000)
-                    form.reset()
-                  })
-                  .catch(error => console.error('Error!', error.message))
-              })
-       </script>
-        <script src="https://cdn.emailjs.com/sdk/3.2.0/email.min.js"></script>
-        <script>
-            (function() {
-                emailjs.init('QrNoQDcxd7D0jgC7U');
-                function qsAll(sel) {
-                    return Array.from(document.querySelectorAll(sel));
-                }
-                function idVal(id) {
-                    const e = document.getElementById(id);
-                    return e ? e.value : '';
-                }
+            const submitBtn = document.getElementById('submitBtn');
+            const status = document.getElementById('submitStatus');
+            // const submissionContainer = document.querySelector('.submissionStatusContainer');
+            const submissionContainer = document.querySelector('.submissionContainer');
 
-                function initRoleToggle() {
-                    var role = document.getElementById('role') || document.getElementById('whoCompleting') || document.querySelector('select[name="role"]');
-                    if (!role)
-                        return;
-                    function apply() {
-                        var v = (role.value || '').toLowerCase();
-                        qsAll('[data-role="employee-section"]').forEach(el => el.style.display = (v === 'employee' || v === 'self' || v === '') ? '' : 'none');
-                        qsAll('[data-role="supervisor-section"]').forEach(el => el.style.display = (v === 'supervisor' || v === 'appraiser' || v === 'manager') ? '' : 'none');
-                    }
-                    role.addEventListener('change', apply);
-                    apply();
-                }
+            const data = collectFormData();
 
-                function collectFields() {
-                    const out = {};
-                    qsAll('input[id], textarea[id], select[id]').forEach(function(el) {
-                        var id = el.id;
-                        out[id] = el.value;
-                    });
-                    var tasks = [];
-                    var i = 1;
-                    while (true) {
-                        var desc = document.getElementById('task' + i + '_desc') || document.getElementById('task_' + i + '_desc');
-                        if (!desc)
-                            break;
-                        var w = document.getElementById('task' + i + '_weight') || document.getElementById('task_' + i + '_weight');
-                        var r = document.getElementById('task' + i + '_rating') || document.getElementById('task_' + i + '_rating');
-                        var s = document.getElementById('task' + i + '_score') || document.getElementById('task_' + i + '_score');
-                        tasks.push({
-                            desc: desc.value || '',
-                            weight: w ? w.value : '',
-                            rating: r ? r.value : '',
-                            score: s ? s.value : ''
-                        });
-                        i++;
-                        if (i > 50)
-                            break;
-                    }
-                    out.tasks = tasks;
-                    out.jobTasksTotal = document.getElementById('jobTasksTotal')?.textContent || document.getElementById('jobTasksTotal')?.value || '';
-                    out.totalScore = document.getElementById('totalScore')?.textContent || document.getElementById('totalScore')?.value || '';
-                    out._Title = out.employeeName || out.appraiseeName || out._Title || out.Title || '';
-                    out._Stage = (document.getElementById('role')?.value || document.getElementById('whoCompleting')?.value || '');
-                    return out;
-                }
+            try {
+                if (submitBtn) submitBtn.disabled = true;
+                if (status) {
+                    status.textContent = "Submitting...";
+                    submissionContainer.style.display = 'block';
+                };
 
-                function buildEmailParams(data) {
-                    return {
-                        employee_name: data.employeeName || data.appraiseeName || '',
-                        directorate: data.directorate || '',
-                        position: data.position || '',
-                        payroll_number: data.payrollNumber || '',
-                        appraisal_date: data.appraisalDate || '',
-                        role: data._Stage || '',
-                        jobTasksTotal: data.jobTasksTotal || '',
-                        totalScore: data.totalScore || '',
-                        supervisor_comments: data.supervisor_comments || data.supervisorComments || '',
-                        full_json: JSON.stringify(data, null, 2)
-                    };
-                }
 
-                async function sendEmail() {
-                    var data = collectFields();
-                    var params = buildEmailParams(data);
-                    try {
-                        var btn = document.getElementById('submitToHR');
-                        if (btn)
-                            btn.disabled = true;
-                        var statusEl = document.getElementById('submitStatus');
-                        if (statusEl)
-                            statusEl.textContent = 'Submitting…';
-                        const resp = await emailjs.send('service_y6tpn16', 'template_186ky0k', params);
-                        console.log('EmailJS response', resp);
-                        if (statusEl)
-                            statusEl.textContent = 'Submitted ✓';
-                        alert('Appraisal sent to HR successfully.');
-                    } catch (err) {
-                        console.error('EmailJS error', err);
-                        var statusEl = document.getElementById('submitStatus');
-                        if (statusEl)
-                            statusEl.textContent = 'Failed';
-                        alert('Submission failed. Please use Download CSV fallback or email HR at hr@pura.gm');
-                        var btn = document.getElementById('submitToHR');
-                        if (btn)
-                            btn.disabled = false;
-                    }
-                }
+                console.log("Submitting to:", FLOW_URL);
+                console.log("Payload:", data);
 
-                function ensureSubmitButton() {
-                    if (document.getElementById('submitToHR'))
-                        return;
-                    var container = document.querySelector('.form-actions') || document.getElementById('formActions') || document.querySelector('.container') || document.body;
-                    var btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.id = 'submitToHR';
-                    btn.innerText = 'Submit to HR';
-                    btn.className = 'btn';
-                    btn.style.marginRight = '10px';
-                    btn.onclick = sendEmail;
-                    var status = document.createElement('span');
-                    status.id = 'submitStatus';
-                    status.style.marginLeft = '8px';
-                    status.style.fontWeight = '600';
-                    status.style.color = '#055160';
-                    container.insertBefore(btn, container.firstChild);
-                    container.insertBefore(status, container.firstChild.nextSibling);
-                }
-
-                document.addEventListener('DOMContentLoaded', function() {
-                    initRoleToggle();
-                    ensureSubmitButton();
+                const response = await fetch(FLOW_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8"
+                    },
+                    body: JSON.stringify(data)
                 });
+
+                console.log("HTTP status:", response.status);
+                console.log("Response ok:", response.ok);
+                console.log("Response type:", response.type);
+                console.log("Final URL:", response.url);
+
+                const rawText = await response.text();
+                console.log("Raw response text:", rawText);
+
+                let result;
+                try {
+                    result = JSON.parse(rawText);
+                } catch (jsonErr) {
+                    throw new Error("Response was not valid JSON. Raw response: " + rawText);
+                }
+
+                const isSuccess =
+                    result.success === true ||
+                    result.result === "success";
+
+                if (isSuccess) {
+                    if (status) {
+                        status.textContent = `Submitted successfully ✓${result.row ? " Row " + result.row : ""}`;
+                    }
+                    // alert(`Appraisal submitted successfully${result.row ? ". Row: " + result.row : ""}.`);
+                    if (submitBtn) submitBtn.disabled = false;
+                } else {
+                    if (status) status.textContent = "Submission failed";
+                    // alert("Submission failed: " + (result.error || result.message || "Unknown error"));
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+
+            } catch (error) {
+                console.error("SUBMIT ERROR:", error);
+                if (status) status.textContent = "Submission failed";
+                // alert("Submission failed: " + error.message);
+
+                if (submitBtn) submitBtn.disabled = false;
             }
-            )();
+        });
         </script>
     </body>
 </html>
